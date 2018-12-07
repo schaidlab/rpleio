@@ -1,0 +1,9 @@
+import(Matrix)
+import(rms)
+#import(stats)
+importFrom("stats", "lm", "pchisq", "var", "glm", "gaussian", "binomial")
+importFrom("utils", "combn")
+export(pleio.glm.fit, pleio.glm.sequential, pleio.glm.test)
+export(pleio.q.fit, pleio.q.sequential, pleio.q.test)
+
+##exportPattern("^[[:alpha:]]+")

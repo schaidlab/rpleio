@@ -1,0 +1,83 @@
+---
+title: "Pleiotropy for quantitive traits: pleio"
+author: "Dan Schaid, Jason Sinnwell"
+date: "`r format(Sys.time(),'%d %B, %Y')`"
+output: 
+  rmarkdown:::pdf_document:
+    toc: false
+    toc_depth: 3
+---
+
+Example Data
+=============
+
+The pleio package contains a pre-made simulated dataset with multiple quantitative traits 
+simulated from a multivariate normal distribution with common correlation
+structure, correlation of 0.5, and genotypes simulated based on minor allele
+frequency of 0.2, and assumes that traits 2 and 3 have non-zero coefficients, while all
+other traits are not asssociated with dose of minor allele.
+
+Here, we load the simulated dataset and show matrix y for phenotypes and the distribution of the minor dosage in the single genotype, *geno*.
+```{r, loaddat, message=FALSE, warning=FALSE}
+
+## load package and dataset
+require(pleio)
+data(pleio.qdemo)
+
+## preview simulated data
+head(y)
+table(geno)
+```
+
+## Sequential Pleiotropy Tests
+
+The *pleio.q.sequential* function is a high-level way to perform sequential tests of the number of traits
+(and which traits) are associated with a genotype. The algorithm starts with testing the usual multivariate null
+hypthothesis that all betas are zero. If this test rejects, because the p-value is less than a user-spiecifed
+threshold, then allow one beta to be non-zero in order to test whether the remaining betas $= 0$. If the test
+allowing for one non-zero beta rejects, then allow two non-zero betas (testing all combinations of two
+non-zero betas). Continue this sequential testing until the p-value for a test is greater than the specified
+threshold. When the sequential testing stops, one can conclude that the final model contains the non-zero betas,
+while all other betas are inferred to be zero. For m traits, the sequential testing stops either when the p-value
+is less than the threshold, or when (m-1) traits are tested. If the p-value remains less than *pval.threshold*
+when testing (m-1) traits, this implies that all m traits are associated with the genotype. 
+
+Below we run two functions, *pleio.q.fit*, which performs pre-calculations on the models
+to be tested, and *pleio.q.sequential*, which performs the sequential pleiotropy tests on the pre-computed object
+from *pleio.q.fit*.
+
+The final result lists the indices of the non-zero betas (the indices of the traits associated with a genotype),
+and the p-value that tests the fit of the final model. A p-value greater than the threshold is expected for the
+final model, showing that the final model fits the data well. For this example, the sequential approach stopped
+at 2 traits because the p-value is greater than the *pval.threshold* argument given of 0.05.
+
+```{r, sequentialfit}
+fit <- pleio.q.fit(y, geno)
+
+test.seq <- pleio.q.sequential(fit, pval.threshold=.05)
+test.seq
+```
+
+## Equivalent Steps to Sequential Fit
+
+The sequential steps above can be performed with more user control using *pleio.q.test*, with
+*count.nonzero.beta* as the number of non-zero betas for the null hypothesis. The result of
+*pleio.q.test* contains the global test statistic, degrees of freedom (df), p-value for testing the
+model, the indices of the non-zero betas in the model, and a data.frame called "tests" that contains the
+tests performed for the null hypothesis models (i.e., the indices of the non-zero betas and the corresponding
+statistic, tk, for each model). For $m$ traits, and $k = count.nonzero.beta$, there are m-choose-k models in the
+set that are considered in the null hypothesis, and the minimum tk test statistic over the set provides the
+global test statistic reported.
+
+```{r, fitsteps}
+test0 <- pleio.q.test(fit, count.nonzero.beta = 0)
+test0
+
+test1 <- pleio.q.test(fit, count.nonzero.beta = 1)
+test1
+
+test2 <- pleio.q.test(fit, count.nonzero.beta = 2)
+test2
+
+```
+
